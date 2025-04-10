@@ -2,7 +2,7 @@
 import React, { useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useNotes } from "@/context/NoteContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -86,6 +86,7 @@ const MarkdownEditor: React.FC = () => {
                     </code>
                   ) : (
                     <SyntaxHighlighter
+                      // @ts-ignore - The type definition for style is incorrect
                       style={tomorrow}
                       language={match[1]}
                       PreTag="div"
