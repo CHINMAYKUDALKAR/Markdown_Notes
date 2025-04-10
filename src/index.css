@@ -129,27 +129,27 @@
 }
 
 .markdown-editor blockquote {
-  @apply pl-4 border-l-4 border-gray-300 italic my-4;
+  @apply pl-4 border-l-4 border-primary/30 italic my-4 text-muted-foreground;
 }
 
 .markdown-editor code {
-  @apply font-mono bg-gray-100 dark:bg-gray-800 p-0.5 rounded;
+  @apply font-mono bg-muted px-1.5 py-0.5 rounded text-sm;
 }
 
 .markdown-editor pre {
-  @apply font-mono bg-gray-100 dark:bg-gray-800 p-3 rounded my-4 overflow-x-auto;
+  @apply font-mono bg-muted p-4 rounded-md my-4 overflow-x-auto;
 }
 
 .markdown-editor a {
-  @apply text-primary underline;
+  @apply text-primary underline hover:text-primary/80 transition-colors;
 }
 
 .markdown-editor img {
-  @apply max-w-full my-4 rounded;
+  @apply max-w-full my-4 rounded-md;
 }
 
 .markdown-editor hr {
-  @apply my-6 border-t border-gray-300 dark:border-gray-700;
+  @apply my-6 border-t border-border;
 }
 
 .markdown-editor table {
@@ -157,9 +157,19 @@
 }
 
 .markdown-editor th, .markdown-editor td {
-  @apply border border-gray-300 dark:border-gray-700 p-2;
+  @apply border border-border p-2;
 }
 
 .markdown-editor th {
-  @apply bg-gray-100 dark:bg-gray-800;
+  @apply bg-muted font-medium;
+}
+
+/* Add styling for code blocks */
+.markdown-editor pre > div {
+  @apply rounded-md !bg-muted border border-border;
+}
+
+/* Style for keyboard shortcuts */
+kbd {
+  @apply inline-flex items-center justify-center text-xs font-medium border rounded px-1 py-0.5 border-border;
 }

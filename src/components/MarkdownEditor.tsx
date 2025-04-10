@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -8,10 +8,25 @@ import { useNotes } from "@/context/NoteContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { Clock, FileText } from "lucide-react";
+import { toast } from "sonner";
 
 const MarkdownEditor: React.FC = () => {
   const { currentNote, updateNote } = useNotes();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [wordCount, setWordCount] = useState(0);
+  const [readingTime, setReadingTime] = useState(0);
+
+  // Calculate word count and reading time
+  useEffect(() => {
+    if (currentNote) {
+      const text = currentNote.content || "";
+      const words = text.trim().split(/\s+/).filter(Boolean).length;
+      setWordCount(words);
+      // Average reading speed: 200 words per minute
+      setReadingTime(Math.ceil(words / 200));
+    }
+  }, [currentNote?.content]);
 
   useEffect(() => {
     // Auto-focus the textarea when a note is loaded
@@ -28,6 +43,85 @@ const MarkdownEditor: React.FC = () => {
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (!currentNote) return;
     updateNote(currentNote.id, { content: e.target.value });
+  };
+
+  // Handle keyboard shortcuts
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!currentNote) return;
+    
+    // Only proceed if ctrl or cmd key is pressed
+    if (!(e.ctrlKey || e.metaKey)) return;
+    
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = currentNote.content.substring(start, end);
+    
+    let newContent = currentNote.content;
+    let newCursorPos = end;
+    
+    switch (e.key) {
+      case 'b': // Bold
+        e.preventDefault();
+        newContent = 
+          currentNote.content.substring(0, start) +
+          `**${selectedText}**` +
+          currentNote.content.substring(end);
+        newCursorPos = end + 4;
+        updateNote(currentNote.id, { content: newContent });
+        toast.success("Text formatted as bold");
+        break;
+        
+      case 'i': // Italic
+        e.preventDefault();
+        newContent = 
+          currentNote.content.substring(0, start) +
+          `*${selectedText}*` +
+          currentNote.content.substring(end);
+        newCursorPos = end + 2;
+        updateNote(currentNote.id, { content: newContent });
+        toast.success("Text formatted as italic");
+        break;
+        
+      case 'k': // Link
+        e.preventDefault();
+        newContent = 
+          currentNote.content.substring(0, start) +
+          `[${selectedText}](url)` +
+          currentNote.content.substring(end);
+        newCursorPos = end + 7;
+        updateNote(currentNote.id, { content: newContent });
+        toast.success("Link inserted");
+        break;
+        
+      case '1': // Heading 1
+      case '2': // Heading 2
+      case '3': // Heading 3
+        e.preventDefault();
+        const level = e.key;
+        const prefix = '#'.repeat(parseInt(level));
+        
+        // Check if we're at the start of a line
+        const lineStart = currentNote.content.lastIndexOf('\n', start - 1) + 1;
+        const beforeLine = currentNote.content.substring(0, lineStart);
+        const afterLine = currentNote.content.substring(lineStart);
+        
+        newContent = `${beforeLine}${prefix} ${afterLine}`;
+        updateNote(currentNote.id, { content: newContent });
+        toast.success(`Heading ${level} added`);
+        break;
+    }
+    
+    // Set cursor position after update
+    setTimeout(() => {
+      if (textarea) {
+        textarea.focus();
+        textarea.selectionStart = newCursorPos;
+        textarea.selectionEnd = newCursorPos;
+      }
+    }, 0);
   };
 
   // If no note is selected, show placeholder
@@ -50,6 +144,18 @@ const MarkdownEditor: React.FC = () => {
         rows={1}
       />
 
+      {/* Word count and reading time */}
+      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2 px-2">
+        <div className="flex items-center gap-1">
+          <FileText className="h-3 w-3" />
+          <span>{wordCount} words</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          <span>{readingTime} min read</span>
+        </div>
+      </div>
+
       {/* Editor tabs */}
       <Tabs defaultValue="edit" className="flex-1 flex flex-col overflow-hidden">
         <TabsList className="w-full justify-start border-b rounded-none bg-transparent py-0">
@@ -67,6 +173,7 @@ const MarkdownEditor: React.FC = () => {
             ref={textareaRef}
             value={currentNote.content}
             onChange={handleContentChange}
+            onKeyDown={handleKeyDown}
             className="flex-1 resize-none border-none h-full bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 font-mono text-base leading-relaxed"
             placeholder="Start writing..."
           />
@@ -103,6 +210,15 @@ const MarkdownEditor: React.FC = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Keyboard shortcuts help */}
+      <div className="border-t text-xs py-2 px-2 text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
+        <span>Shortcuts: </span>
+        <span><kbd className="px-1 rounded bg-muted">Ctrl/⌘+B</kbd> Bold</span>
+        <span><kbd className="px-1 rounded bg-muted">Ctrl/⌘+I</kbd> Italic</span>
+        <span><kbd className="px-1 rounded bg-muted">Ctrl/⌘+K</kbd> Link</span>
+        <span><kbd className="px-1 rounded bg-muted">Ctrl/⌘+1-3</kbd> Headings</span>
+      </div>
     </div>
   );
 };
