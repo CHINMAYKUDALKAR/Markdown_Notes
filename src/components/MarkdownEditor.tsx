@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -282,7 +283,6 @@ const MarkdownEditor: React.FC = () => {
                       PreTag="div"
                       wrapLines={true}
                       className="rounded-md !bg-muted/50 dark:!bg-muted/20"
-                      {...props}
                     >
                       {String(children).replace(/\n$/, '')}
                     </SyntaxHighlighter>
