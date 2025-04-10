@@ -78,9 +78,13 @@ const MarkdownEditor: React.FC = () => {
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
-                code({node, inline, className, children, ...props}) {
+                code({node, className, children, ...props}) {
                   const match = /language-(\w+)/.exec(className || '');
-                  return !inline && match ? (
+                  return !match ? (
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  ) : (
                     <SyntaxHighlighter
                       style={tomorrow}
                       language={match[1]}
@@ -89,10 +93,6 @@ const MarkdownEditor: React.FC = () => {
                     >
                       {String(children).replace(/\n$/, '')}
                     </SyntaxHighlighter>
-                  ) : (
-                    <code className={className} {...props}>
-                      {children}
-                    </code>
                   );
                 }
               }}
