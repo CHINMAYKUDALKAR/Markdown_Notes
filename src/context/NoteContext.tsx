@@ -25,7 +25,7 @@ interface NoteContextType {
   updateFolder: (id: string, name: string) => void;
   deleteFolder: (id: string) => void;
   
-  createTag: (name: string, color?: string) => void;
+  createTag: (data: Partial<Tag>) => void;
   updateTag: (id: string, data: Partial<Tag>) => void;
   deleteTag: (id: string) => void;
 }
@@ -175,18 +175,18 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   
   // Tag operations
-  const createTag = (name: string, color?: string) => {
+  const createTag = (data: Partial<Tag>) => {
     // Pick a random color if none provided
-    const tagColor = color || tagColors[Math.floor(Math.random() * tagColors.length)];
+    const tagColor = data.color || tagColors[Math.floor(Math.random() * tagColors.length)];
     
     const newTag: Tag = {
       id: uuidv4(),
-      name,
+      name: data.name || "New Tag",
       color: tagColor
     };
     
     setTags([...tags, newTag]);
-    toast.success(`Tag "${name}" created`);
+    toast.success(`Tag "${newTag.name}" created`);
     return newTag;
   };
   

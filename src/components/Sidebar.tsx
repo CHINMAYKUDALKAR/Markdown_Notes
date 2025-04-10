@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNotes } from "@/context/NoteContext";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,16 @@ const tagColors = [
   'note.softPink',
   'note.softBlue',
 ];
+
+// Define the tag schema first before using it
+const tagSchema = z.object({
+  name: z.string().min(2, {
+    message: "Tag name must be at least 2 characters.",
+  }),
+  color: z.string().min(4, {
+    message: "Color must be selected.",
+  }),
+});
 
 const Sidebar: React.FC = () => {
   const {
@@ -70,18 +81,8 @@ const Sidebar: React.FC = () => {
     },
   });
 
-  const tagSchema = z.object({
-    name: z.string().min(2, {
-      message: "Tag name must be at least 2 characters.",
-    }),
-    color: z.string().min(4, {
-      message: "Color must be selected.",
-    }),
-  });
-
   const handleCreateTag = (values: z.infer<typeof tagSchema>) => {
     createTag({
-      id: uuidv4(),
       name: values.name,
       color: values.color,
     });
@@ -116,6 +117,11 @@ const Sidebar: React.FC = () => {
 
     setSelectedTag(tagId);
     setIsEditTagDialogOpen(true);
+  };
+
+  // Create a wrapper function for createNote that handles the MouseEvent
+  const handleCreateNote = () => {
+    createNote();
   };
 
   return (
@@ -171,7 +177,7 @@ const Sidebar: React.FC = () => {
       </ScrollArea>
 
       <div className="p-4 border-t border-sidebar-border">
-        <Button variant="secondary" className="w-full" onClick={createNote}>
+        <Button variant="secondary" className="w-full" onClick={handleCreateNote}>
           <PlusCircle className="mr-2 h-4 w-4" />
           New Note
         </Button>
