@@ -8,25 +8,57 @@ import { useNotes } from "@/context/NoteContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Clock, FileText } from "lucide-react";
+import { Clock, FileText, History, TextQuote } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "@/context/ThemeContext";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const MarkdownEditor: React.FC = () => {
   const { currentNote, updateNote } = useNotes();
   const { theme } = useTheme();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [wordCount, setWordCount] = useState(0);
+  const [charCount, setCharCount] = useState(0);
   const [readingTime, setReadingTime] = useState(0);
+  const [history, setHistory] = useState<{ timestamp: string; content: string }[]>([]);
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
 
-  // Calculate word count and reading time
+  // Calculate word count, character count and reading time
   useEffect(() => {
     if (currentNote) {
       const text = currentNote.content || "";
       const words = text.trim().split(/\s+/).filter(Boolean).length;
+      const chars = text.length;
+      
       setWordCount(words);
+      setCharCount(chars);
       // Average reading speed: 200 words per minute
       setReadingTime(Math.ceil(words / 200));
+      
+      // Add to history when content changes significantly (more than 20 chars difference)
+      const lastHistoryItem = history[0];
+      if (!lastHistoryItem || Math.abs(lastHistoryItem.content.length - text.length) > 20) {
+        setHistory(prev => [{
+          timestamp: new Date().toISOString(),
+          content: text
+        }, ...prev.slice(0, 9)]); // Keep last 10 history items
+      }
     }
   }, [currentNote?.content]);
 
@@ -45,6 +77,13 @@ const MarkdownEditor: React.FC = () => {
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (!currentNote) return;
     updateNote(currentNote.id, { content: e.target.value });
+  };
+  
+  const restoreHistoryItem = (content: string) => {
+    if (!currentNote) return;
+    updateNote(currentNote.id, { content });
+    toast.success("Restored from history");
+    setShowHistoryPanel(false);
   };
 
   // Handle keyboard shortcuts
@@ -153,9 +192,64 @@ const MarkdownEditor: React.FC = () => {
           <span>{wordCount} words</span>
         </div>
         <div className="flex items-center gap-1">
+          <TextQuote className="h-3 w-3" />
+          <span>{charCount} characters</span>
+        </div>
+        <div className="flex items-center gap-1">
           <Clock className="h-3 w-3" />
           <span>{readingTime} min read</span>
         </div>
+        
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Popover open={showHistoryPanel} onOpenChange={setShowHistoryPanel}>
+                <PopoverTrigger asChild>
+                  <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                    <History className="h-3 w-3" />
+                    <span>History</span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0" align="start">
+                  <div className="p-3 border-b">
+                    <h3 className="font-medium">Note History</h3>
+                    <p className="text-xs text-muted-foreground">Recent edit snapshots</p>
+                  </div>
+                  <ScrollArea className="h-80">
+                    <Accordion type="single" collapsible className="w-full">
+                      {history.length > 0 ? (
+                        history.map((item, index) => (
+                          <AccordionItem key={index} value={index.toString()}>
+                            <AccordionTrigger className="px-4 py-2 text-xs">
+                              {new Date(item.timestamp).toLocaleString()}
+                            </AccordionTrigger>
+                            <AccordionContent className="px-4">
+                              <div className="text-xs max-h-20 overflow-auto p-2 bg-muted/30 rounded mb-2">
+                                {item.content.substring(0, 200)}
+                                {item.content.length > 200 ? '...' : ''}
+                              </div>
+                              <button
+                                className="text-xs text-primary hover:underline w-full text-right"
+                                onClick={() => restoreHistoryItem(item.content)}
+                              >
+                                Restore this version
+                              </button>
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))
+                      ) : (
+                        <div className="p-4 text-sm text-muted-foreground">
+                          No history available
+                        </div>
+                      )}
+                    </Accordion>
+                  </ScrollArea>
+                </PopoverContent>
+              </Popover>
+            </TooltipTrigger>
+            <TooltipContent>View edit history</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {/* Editor tabs */}
@@ -183,14 +277,16 @@ const MarkdownEditor: React.FC = () => {
         
         {/* Preview mode */}
         <TabsContent value="preview" className="flex-1 overflow-auto p-0 pt-4 m-0">
-          <div className={cn("markdown-editor px-2")}>
+          <div className={cn("markdown-editor px-2", 
+            theme === 'dark' ? 'prose-invert' : 'prose',
+            "prose max-w-none")}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
                 code({node, className, children, ...props}) {
                   const match = /language-(\w+)/.exec(className || '');
                   return !match ? (
-                    <code className={className} {...props}>
+                    <code className={cn("rounded bg-muted px-1 py-0.5", className)} {...props}>
                       {children}
                     </code>
                   ) : (
@@ -199,11 +295,34 @@ const MarkdownEditor: React.FC = () => {
                       style={theme === 'dark' ? tomorrow : oneLight}
                       language={match[1]}
                       PreTag="div"
+                      wrapLines={true}
+                      className="rounded-md !bg-muted/50 dark:!bg-muted/20"
                       {...props}
                     >
                       {String(children).replace(/\n$/, '')}
                     </SyntaxHighlighter>
                   );
+                },
+                a({node, className, children, ...props}) {
+                  return (
+                    <a 
+                      className={cn("text-primary hover:underline", className)} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      {...props}
+                    >
+                      {children}
+                    </a>
+                  );
+                },
+                h1({node, className, children, ...props}) {
+                  return <h1 className={cn("text-2xl font-bold mt-6 mb-4", className)} {...props}>{children}</h1>;
+                },
+                h2({node, className, children, ...props}) {
+                  return <h2 className={cn("text-xl font-bold mt-5 mb-3", className)} {...props}>{children}</h2>;
+                },
+                h3({node, className, children, ...props}) {
+                  return <h3 className={cn("text-lg font-bold mt-4 mb-2", className)} {...props}>{children}</h3>;
                 }
               }}
             >

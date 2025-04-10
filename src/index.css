@@ -5,83 +5,64 @@
 
 @layer base {
   :root {
-    --background: 260 20% 99%;
-    --foreground: 260 10% 20%;
-
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 260 10% 20%;
-
+    --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 260 10% 20%;
-
-    --primary: 260 40% 50%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
     --primary-foreground: 0 0% 98%;
-
-    --secondary: 260 15% 94%;
-    --secondary-foreground: 260 10% 20%;
-
-    --muted: 260 15% 94%;
-    --muted-foreground: 260 10% 40%;
-
-    --accent: 260 15% 94%;
-    --accent-foreground: 260 10% 20%;
-
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-
-    --border: 260 15% 90%;
-    --input: 260 15% 90%;
-    --ring: 260 40% 50%;
-
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
     --radius: 0.5rem;
-
-    --sidebar-background: 260 20% 99%;
-    --sidebar-foreground: 260 10% 20%;
-    --sidebar-primary: 260 40% 50%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 240 10% 3.9%;
+    --sidebar-primary: 240 5.9% 10%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 260 15% 94%;
-    --sidebar-accent-foreground: 260 10% 20%;
-    --sidebar-border: 260 15% 90%;
-    --sidebar-ring: 260 40% 50%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 240 5.9% 90%;
+    --sidebar-ring: 240 5.9% 10%;
   }
 
   .dark {
-    --background: 260 15% 10%;
-    --foreground: 260 10% 98%;
-
-    --card: 260 15% 12%;
-    --card-foreground: 260 10% 98%;
-
-    --popover: 260 15% 12%;
-    --popover-foreground: 260 10% 98%;
-
-    --primary: 260 40% 60%;
-    --primary-foreground: 260 10% 5%;
-
-    --secondary: 260 15% 20%;
-    --secondary-foreground: 260 10% 98%;
-
-    --muted: 260 15% 20%;
-    --muted-foreground: 260 10% 70%;
-
-    --accent: 260 15% 20%;
-    --accent-foreground: 260 10% 98%;
-
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 260 10% 98%;
-
-    --border: 260 15% 20%;
-    --input: 260 15% 20%;
-    --ring: 260 40% 60%;
-
-    --sidebar-background: 260 15% 12%;
-    --sidebar-foreground: 260 10% 98%;
-    --sidebar-primary: 260 40% 60%;
-    --sidebar-primary-foreground: 260 10% 5%;
-    --sidebar-accent: 260 15% 20%;
-    --sidebar-accent-foreground: 260 10% 98%;
-    --sidebar-border: 260 15% 20%;
-    --sidebar-ring: 260 40% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+    --sidebar-background: 240 10% 3.9%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 240 5.9% 10%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 240 4.9% 83.9%;
   }
 }
 
@@ -89,87 +70,85 @@
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-/* Markdown Editor Styling */
+/* Markdown styling */
 .markdown-editor {
-  @apply text-base leading-relaxed;
-}
+  @apply text-foreground;
 
-.markdown-editor h1 {
-  @apply text-3xl font-bold mt-6 mb-4;
-}
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold mb-4 mt-6;
+  }
 
-.markdown-editor h2 {
-  @apply text-2xl font-bold mt-5 mb-3;
-}
+  h1 {
+    @apply text-2xl;
+  }
 
-.markdown-editor h3 {
-  @apply text-xl font-bold mt-4 mb-2;
-}
+  h2 {
+    @apply text-xl;
+  }
 
-.markdown-editor p {
-  @apply my-3;
-}
+  h3 {
+    @apply text-lg;
+  }
 
-.markdown-editor ul, .markdown-editor ol {
-  @apply my-3 pl-6;
-}
+  a {
+    @apply text-primary hover:underline;
+  }
 
-.markdown-editor ul {
-  @apply list-disc;
-}
+  p {
+    @apply mb-4;
+  }
 
-.markdown-editor ol {
-  @apply list-decimal;
-}
+  ul, ol {
+    @apply mb-4 pl-6;
+  }
 
-.markdown-editor blockquote {
-  @apply pl-4 border-l-4 border-primary/30 italic my-4 text-muted-foreground;
-}
+  ul {
+    @apply list-disc;
+  }
 
-.markdown-editor code {
-  @apply font-mono bg-muted px-1.5 py-0.5 rounded text-sm;
-}
+  ol {
+    @apply list-decimal;
+  }
 
-.markdown-editor pre {
-  @apply font-mono bg-muted p-4 rounded-md my-4 overflow-x-auto;
-}
+  blockquote {
+    @apply border-l-4 border-primary/30 pl-4 py-1 italic my-4;
+  }
 
-.markdown-editor a {
-  @apply text-primary underline hover:text-primary/80 transition-colors;
-}
+  hr {
+    @apply my-6 border-t border-border;
+  }
 
-.markdown-editor img {
-  @apply max-w-full my-4 rounded-md;
-}
+  table {
+    @apply w-full my-6 border-collapse;
+  }
 
-.markdown-editor hr {
-  @apply my-6 border-t border-border;
-}
+  table th, table td {
+    @apply border border-border p-2;
+  }
 
-.markdown-editor table {
-  @apply w-full border-collapse my-4;
-}
+  table th {
+    @apply bg-muted;
+  }
 
-.markdown-editor th, .markdown-editor td {
-  @apply border border-border p-2;
-}
+  img {
+    @apply max-w-full h-auto rounded-md my-4;
+  }
 
-.markdown-editor th {
-  @apply bg-muted font-medium;
-}
+  code:not([class*="language-"]) {
+    @apply font-mono bg-muted px-1 py-0.5 rounded text-sm;
+  }
 
-/* Add styling for code blocks */
-.markdown-editor pre > div {
-  @apply rounded-md !bg-muted border border-border;
-}
+  pre {
+    @apply font-mono bg-muted p-4 rounded-md overflow-x-auto my-4;
+  }
 
-/* Style for keyboard shortcuts */
-kbd {
-  @apply inline-flex items-center justify-center text-xs font-medium border rounded px-1 py-0.5 border-border;
+  .dark pre {
+    @apply bg-muted/40;
+  }
 }
