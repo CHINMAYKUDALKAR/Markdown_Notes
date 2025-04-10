@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -28,6 +27,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const MarkdownEditor: React.FC = () => {
   const { currentNote, updateNote } = useNotes();
@@ -39,7 +39,6 @@ const MarkdownEditor: React.FC = () => {
   const [history, setHistory] = useState<{ timestamp: string; content: string }[]>([]);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
 
-  // Calculate word count, character count and reading time
   useEffect(() => {
     if (currentNote) {
       const text = currentNote.content || "";
@@ -48,22 +47,19 @@ const MarkdownEditor: React.FC = () => {
       
       setWordCount(words);
       setCharCount(chars);
-      // Average reading speed: 200 words per minute
       setReadingTime(Math.ceil(words / 200));
       
-      // Add to history when content changes significantly (more than 20 chars difference)
       const lastHistoryItem = history[0];
       if (!lastHistoryItem || Math.abs(lastHistoryItem.content.length - text.length) > 20) {
         setHistory(prev => [{
           timestamp: new Date().toISOString(),
           content: text
-        }, ...prev.slice(0, 9)]); // Keep last 10 history items
+        }, ...prev.slice(0, 9)]);
       }
     }
   }, [currentNote?.content]);
 
   useEffect(() => {
-    // Auto-focus the textarea when a note is loaded
     if (currentNote && textareaRef.current) {
       textareaRef.current.focus();
     }
@@ -86,11 +82,9 @@ const MarkdownEditor: React.FC = () => {
     setShowHistoryPanel(false);
   };
 
-  // Handle keyboard shortcuts
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (!currentNote) return;
     
-    // Only proceed if ctrl or cmd key is pressed
     if (!(e.ctrlKey || e.metaKey)) return;
     
     const textarea = textareaRef.current;
@@ -104,7 +98,7 @@ const MarkdownEditor: React.FC = () => {
     let newCursorPos = end;
     
     switch (e.key) {
-      case 'b': // Bold
+      case 'b':
         e.preventDefault();
         newContent = 
           currentNote.content.substring(0, start) +
@@ -115,7 +109,7 @@ const MarkdownEditor: React.FC = () => {
         toast.success("Text formatted as bold");
         break;
         
-      case 'i': // Italic
+      case 'i':
         e.preventDefault();
         newContent = 
           currentNote.content.substring(0, start) +
@@ -126,7 +120,7 @@ const MarkdownEditor: React.FC = () => {
         toast.success("Text formatted as italic");
         break;
         
-      case 'k': // Link
+      case 'k':
         e.preventDefault();
         newContent = 
           currentNote.content.substring(0, start) +
@@ -137,14 +131,13 @@ const MarkdownEditor: React.FC = () => {
         toast.success("Link inserted");
         break;
         
-      case '1': // Heading 1
-      case '2': // Heading 2
-      case '3': // Heading 3
+      case '1':
+      case '2':
+      case '3':
         e.preventDefault();
         const level = e.key;
         const prefix = '#'.repeat(parseInt(level));
         
-        // Check if we're at the start of a line
         const lineStart = currentNote.content.lastIndexOf('\n', start - 1) + 1;
         const beforeLine = currentNote.content.substring(0, lineStart);
         const afterLine = currentNote.content.substring(lineStart);
@@ -155,7 +148,6 @@ const MarkdownEditor: React.FC = () => {
         break;
     }
     
-    // Set cursor position after update
     setTimeout(() => {
       if (textarea) {
         textarea.focus();
@@ -165,7 +157,6 @@ const MarkdownEditor: React.FC = () => {
     }, 0);
   };
 
-  // If no note is selected, show placeholder
   if (!currentNote) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -176,7 +167,6 @@ const MarkdownEditor: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Title input */}
       <Textarea
         value={currentNote.title}
         onChange={handleTitleChange}
@@ -185,7 +175,6 @@ const MarkdownEditor: React.FC = () => {
         rows={1}
       />
 
-      {/* Word count and reading time */}
       <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2 px-2">
         <div className="flex items-center gap-1">
           <FileText className="h-3 w-3" />
@@ -252,7 +241,6 @@ const MarkdownEditor: React.FC = () => {
         </TooltipProvider>
       </div>
 
-      {/* Editor tabs */}
       <Tabs defaultValue="edit" className="flex-1 flex flex-col overflow-hidden">
         <TabsList className="w-full justify-start border-b rounded-none bg-transparent py-0">
           <TabsTrigger value="edit" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
@@ -263,7 +251,6 @@ const MarkdownEditor: React.FC = () => {
           </TabsTrigger>
         </TabsList>
         
-        {/* Edit mode */}
         <TabsContent value="edit" className="flex-1 overflow-auto p-0 m-0 data-[state=active]:flex">
           <Textarea
             ref={textareaRef}
@@ -275,7 +262,6 @@ const MarkdownEditor: React.FC = () => {
           />
         </TabsContent>
         
-        {/* Preview mode */}
         <TabsContent value="preview" className="flex-1 overflow-auto p-0 pt-4 m-0">
           <div className={cn("markdown-editor px-2", 
             theme === 'dark' ? 'prose-invert' : 'prose',
@@ -291,7 +277,6 @@ const MarkdownEditor: React.FC = () => {
                     </code>
                   ) : (
                     <SyntaxHighlighter
-                      // @ts-ignore - The type definition for style is incorrect
                       style={theme === 'dark' ? tomorrow : oneLight}
                       language={match[1]}
                       PreTag="div"
@@ -332,7 +317,6 @@ const MarkdownEditor: React.FC = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Keyboard shortcuts help */}
       <div className="border-t text-xs py-2 px-2 text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
         <span>Shortcuts: </span>
         <span><kbd className="px-1 rounded bg-muted">Ctrl/⌘+B</kbd> Bold</span>
