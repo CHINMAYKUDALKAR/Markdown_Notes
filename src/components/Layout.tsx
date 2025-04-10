@@ -9,10 +9,9 @@ const Layout: React.FC = () => {
   return (
     <NoteProvider>
       <div className="flex h-screen">
-        <div className="w-72 overflow-hidden">
+        <div className="w-72 overflow-hidden border-r border-border">
           <Sidebar />
         </div>
-        <Separator orientation="vertical" />
         <div className="flex-1 overflow-hidden">
           <NoteView />
         </div>

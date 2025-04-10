@@ -3,16 +3,18 @@ import React, { useRef, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
-import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { tomorrow, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useNotes } from "@/context/NoteContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Clock, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { useTheme } from "@/context/ThemeContext";
 
 const MarkdownEditor: React.FC = () => {
   const { currentNote, updateNote } = useNotes();
+  const { theme } = useTheme();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [wordCount, setWordCount] = useState(0);
   const [readingTime, setReadingTime] = useState(0);
@@ -194,7 +196,7 @@ const MarkdownEditor: React.FC = () => {
                   ) : (
                     <SyntaxHighlighter
                       // @ts-ignore - The type definition for style is incorrect
-                      style={tomorrow}
+                      style={theme === 'dark' ? tomorrow : oneLight}
                       language={match[1]}
                       PreTag="div"
                       {...props}

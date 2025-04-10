@@ -1,117 +1,138 @@
-
 import React, { useState } from "react";
 import { useNotes } from "@/context/NoteContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { 
-  ChevronRight, 
-  ChevronDown, 
-  FolderPlus, 
-  Search, 
-  FileText, 
-  Folder, 
-  FolderOpen, 
-  Tag, 
-  Plus, 
-  Trash2,
-  Edit,
-  X
-} from "lucide-react";
-import { format } from "date-fns";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { v4 as uuidv4 } from "uuid";
+import { Search, PlusCircle, Edit, Trash2, Hash, Plus, X, ChevronRight, MoreHorizontal, BookOpen, CheckCircle, Clock } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
+
+const tagColors = [
+  'note.purple',
+  'note.lightPurple',
+  'note.softGreen',
+  'note.softYellow',
+  'note.softOrange',
+  'note.softPurple',
+  'note.softPink',
+  'note.softBlue',
+];
 
 const Sidebar: React.FC = () => {
-  const { 
-    notes, 
-    folders, 
-    tags, 
-    currentNote, 
-    searchQuery, 
-    selectedFolder, 
-    selectedTag,
-    createNote, 
-    createFolder, 
-    updateFolder,
-    deleteFolder,
+  const {
+    notes,
+    createNote,
+    updateNote,
+    deleteNote,
+    tags,
     createTag,
+    updateTag,
     deleteTag,
-    setCurrentNote, 
-    setSearchQuery, 
-    setSelectedFolder, 
-    setSelectedTag, 
-    deleteNote
+    currentNote,
+    setCurrentNote,
   } = useNotes();
 
-  const [foldersOpen, setFoldersOpen] = useState(true);
-  const [tagsOpen, setTagsOpen] = useState(true);
-  const [newFolderName, setNewFolderName] = useState("");
-  const [newTagName, setNewTagName] = useState("");
-  const [isEditingFolder, setIsEditingFolder] = useState<string | null>(null);
-  const [editedFolderName, setEditedFolderName] = useState("");
+  const [isNewTagDialogOpen, setIsNewTagDialogOpen] = useState(false);
+  const [isEditTagDialogOpen, setIsEditTagDialogOpen] = useState(false);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Filtered notes based on search, folder and tag selection
-  const filteredNotes = notes.filter(note => {
-    // Search filter
-    const matchesSearch = searchQuery 
-      ? note.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        note.content.toLowerCase().includes(searchQuery.toLowerCase())
-      : true;
-    
-    // Folder filter
-    const matchesFolder = selectedFolder 
-      ? note.folderId === selectedFolder
-      : true;
-    
-    // Tag filter
-    const matchesTag = selectedTag
-      ? note.tags.includes(selectedTag)
-      : true;
-    
-    return matchesSearch && matchesFolder && matchesTag;
+  const filteredNotes = notes.filter((note) =>
+    note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    note.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const newTagForm = useForm<z.infer<typeof tagSchema>>({
+    resolver: zodResolver(tagSchema),
+    defaultValues: {
+      name: "",
+      color: tagColors[0],
+    },
   });
 
-  // Handle folder creation
-  const handleCreateFolder = () => {
-    if (newFolderName.trim()) {
-      createFolder(newFolderName);
-      setNewFolderName("");
-    }
+  const editTagForm = useForm<z.infer<typeof tagSchema>>({
+    resolver: zodResolver(tagSchema),
+    defaultValues: {
+      name: "",
+      color: tagColors[0],
+    },
+  });
+
+  const tagSchema = z.object({
+    name: z.string().min(2, {
+      message: "Tag name must be at least 2 characters.",
+    }),
+    color: z.string().min(4, {
+      message: "Color must be selected.",
+    }),
+  });
+
+  const handleCreateTag = (values: z.infer<typeof tagSchema>) => {
+    createTag({
+      id: uuidv4(),
+      name: values.name,
+      color: values.color,
+    });
+    setIsNewTagDialogOpen(false);
   };
 
-  // Handle tag creation
-  const handleCreateTag = () => {
-    if (newTagName.trim()) {
-      createTag(newTagName);
-      setNewTagName("");
-    }
+  const handleUpdateTag = (values: z.infer<typeof tagSchema>) => {
+    if (!selectedTag) return;
+    updateTag(selectedTag, {
+      name: values.name,
+      color: values.color,
+    });
+    setIsEditTagDialogOpen(false);
+    setSelectedTag(null);
   };
 
-  // Handle folder rename
-  const handleRenameFolder = (folderId: string) => {
-    if (editedFolderName.trim()) {
-      updateFolder(folderId, editedFolderName);
-      setIsEditingFolder(null);
-      setEditedFolderName("");
-    }
+  const handleDeleteTag = () => {
+    if (!selectedTag) return;
+    deleteTag(selectedTag);
+    setIsEditTagDialogOpen(false);
+    setSelectedTag(null);
   };
 
-  // Start editing a folder
-  const startEditingFolder = (folder: { id: string; name: string }) => {
-    setIsEditingFolder(folder.id);
-    setEditedFolderName(folder.name);
+  const handleEditTag = (tagId: string) => {
+    const tag = tags.find((tag) => tag.id === tagId);
+    if (!tag) return;
+
+    editTagForm.reset({
+      name: tag.name,
+      color: tag.color,
+    });
+
+    setSelectedTag(tagId);
+    setIsEditTagDialogOpen(true);
   };
 
   return (
-    <div className="flex flex-col h-full border-r bg-card">
-      {/* Search */}
+    <div className="flex flex-col h-full bg-sidebar">
+      <div className="p-4 border-b border-sidebar-border flex justify-between items-center">
+        <h1 className="text-lg font-bold text-sidebar-foreground flex items-center gap-2">
+          <BookOpen size={18} />
+          <span>Markdown Notes</span>
+        </h1>
+        <ThemeToggle />
+      </div>
+
       <div className="p-4">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            type="text"
+            type="search"
             placeholder="Search notes..."
             className="pl-8"
             value={searchQuery}
@@ -120,312 +141,222 @@ const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* Create note button */}
-      <div className="px-4 py-2">
-        <Button 
-          onClick={() => createNote(selectedFolder)} 
-          className="w-full"
-        >
-          <Plus className="h-4 w-4 mr-2" /> New Note
+      <ScrollArea className="flex-1 p-4">
+        <p className="text-sm font-medium pb-2">Notes</p>
+        <Separator className="pb-4" />
+
+        {filteredNotes.length > 0 ? (
+          <div className="flex flex-col space-y-2">
+            {filteredNotes.map((note) => (
+              <Button
+                key={note.id}
+                variant="ghost"
+                className={cn(
+                  "w-full justify-start rounded-md truncate",
+                  currentNote?.id === note.id
+                    ? "bg-secondary hover:bg-secondary text-foreground"
+                    : "hover:bg-accent hover:text-accent-foreground"
+                )}
+                onClick={() => setCurrentNote(note)}
+              >
+                {note.title || "Untitled"}
+              </Button>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center text-muted-foreground">
+            No notes found.
+          </div>
+        )}
+      </ScrollArea>
+
+      <div className="p-4 border-t border-sidebar-border">
+        <Button variant="secondary" className="w-full" onClick={createNote}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          New Note
         </Button>
       </div>
 
-      <ScrollArea className="flex-1">
-        {/* Folders section */}
-        <Collapsible
-          open={foldersOpen}
-          onOpenChange={setFoldersOpen}
-          className="px-4 py-2"
-        >
-          <div className="flex items-center justify-between">
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="p-2 -ml-2 hover:bg-transparent">
-                {foldersOpen ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </Button>
-            </CollapsibleTrigger>
-            <span className="text-sm font-medium">Folders</span>
-            
-            {/* Add folder dialog */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <FolderPlus className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Folder</DialogTitle>
-                </DialogHeader>
-                <Input
-                  value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value)}
-                  placeholder="Folder name"
-                  className="my-4"
-                />
-                <DialogFooter>
-                  <Button onClick={handleCreateFolder}>Create</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
+      <div className="p-4 border-t border-sidebar-border">
+        <div className="flex justify-between items-center mb-2">
+          <p className="text-sm font-medium">Tags</p>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsNewTagDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
 
-          <CollapsibleContent className="mt-2 space-y-1">
-            {/* All notes option */}
-            <Button
-              variant="ghost"
-              className={cn(
-                "w-full justify-start text-sm font-normal",
-                !selectedFolder && !selectedTag ? "bg-accent" : ""
-              )}
-              onClick={() => {
-                setSelectedFolder(null);
-                setSelectedTag(null);
-              }}
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              All Notes
-            </Button>
-
-            {/* Folder list */}
-            {folders.map(folder => (
-              <div key={folder.id} className="flex items-center group">
+        <div className="flex flex-col space-y-2">
+          {tags.length > 0 ? (
+            tags.map((tag) => (
+              <div
+                key={tag.id}
+                className="flex items-center justify-between"
+              >
                 <Button
                   variant="ghost"
-                  className={cn(
-                    "w-full justify-start text-sm font-normal",
-                    selectedFolder === folder.id ? "bg-accent" : ""
-                  )}
-                  onClick={() => {
-                    setSelectedFolder(folder.id);
-                    setSelectedTag(null);
-                  }}
+                  className="w-full justify-start rounded-md truncate"
+                  style={{ color: tag.color }}
+                  onClick={() => handleEditTag(tag.id)}
                 >
-                  {selectedFolder === folder.id ? (
-                    <FolderOpen className="h-4 w-4 mr-2" />
-                  ) : (
-                    <Folder className="h-4 w-4 mr-2" />
-                  )}
-                  
-                  {isEditingFolder === folder.id ? (
-                    <div onClick={(e) => e.stopPropagation()} className="flex-1">
-                      <Input
-                        value={editedFolderName}
-                        onChange={(e) => setEditedFolderName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleRenameFolder(folder.id);
-                          } else if (e.key === 'Escape') {
-                            setIsEditingFolder(null);
-                          }
-                        }}
-                        autoFocus
-                        className="h-7 text-sm py-0"
-                      />
-                    </div>
-                  ) : (
-                    folder.name
-                  )}
-                </Button>
-                
-                {/* Folder actions */}
-                {!isEditingFolder && (
-                  <div className="flex opacity-0 group-hover:opacity-100 pr-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        startEditingFolder(folder);
-                      }}
-                    >
-                      <Edit className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6 text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteFolder(folder.id);
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                )}
-
-                {/* Editing controls */}
-                {isEditingFolder === folder.id && (
-                  <div className="flex pr-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6 text-green-600"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRenameFolder(folder.id);
-                      }}
-                    >
-                      <div className="h-3.5 w-3.5">✓</div>
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6 text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsEditingFolder(null);
-                      }}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </CollapsibleContent>
-        </Collapsible>
-
-        {/* Tags section */}
-        <Collapsible
-          open={tagsOpen}
-          onOpenChange={setTagsOpen}
-          className="px-4 py-2"
-        >
-          <div className="flex items-center justify-between">
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="p-2 -ml-2 hover:bg-transparent">
-                {tagsOpen ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </Button>
-            </CollapsibleTrigger>
-            <span className="text-sm font-medium">Tags</span>
-            
-            {/* Add tag dialog */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Tag className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Tag</DialogTitle>
-                </DialogHeader>
-                <Input
-                  value={newTagName}
-                  onChange={(e) => setNewTagName(e.target.value)}
-                  placeholder="Tag name"
-                  className="my-4"
-                />
-                <DialogFooter>
-                  <Button onClick={handleCreateTag}>Create</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          <CollapsibleContent className="mt-2 space-y-1">
-            {tags.map(tag => (
-              <div key={tag.id} className="flex items-center group">
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "w-full justify-start text-sm font-normal",
-                    selectedTag === tag.id ? "bg-accent" : ""
-                  )}
-                  onClick={() => {
-                    setSelectedTag(tag.id);
-                    setSelectedFolder(null);
-                  }}
-                >
-                  <div 
-                    className="h-3 w-3 rounded-full mr-2" 
-                    style={{ backgroundColor: tag.color }}
-                  />
+                  <Hash className="mr-2 h-4 w-4" />
                   {tag.name}
                 </Button>
-                
-                {/* Tag delete button */}
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 pr-2"
-                  onClick={() => deleteTag(tag.id)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
               </div>
-            ))}
-          </CollapsibleContent>
-        </Collapsible>
-
-        {/* Note list */}
-        <div className="px-4 py-2">
-          <h3 className="text-sm font-medium mb-2">
-            {searchQuery 
-              ? "Search Results" 
-              : selectedFolder 
-                ? `${folders.find(f => f.id === selectedFolder)?.name || ""} Notes` 
-                : selectedTag 
-                  ? `#${tags.find(t => t.id === selectedTag)?.name || ""}` 
-                  : "All Notes"}
-          </h3>
-          
-          {filteredNotes.length === 0 ? (
-            <div className="text-sm text-muted-foreground py-2">
-              No notes found
-            </div>
+            ))
           ) : (
-            <div className="space-y-1">
-              {filteredNotes.map(note => (
-                <div key={note.id} className="flex group items-center">
-                  <Button
-                    variant="ghost"
-                    className={cn(
-                      "w-full justify-start text-sm font-normal",
-                      currentNote?.id === note.id ? "bg-accent" : ""
-                    )}
-                    onClick={() => setCurrentNote(note)}
-                  >
-                    <div className="flex flex-col items-start">
-                      <span 
-                        className={cn(
-                          "truncate w-full max-w-[180px]",
-                          currentNote?.id === note.id ? "font-medium" : ""
-                        )}
-                      >
-                        {note.title || "Untitled"}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(note.updatedAt), "MMM d, yyyy")}
-                      </span>
-                    </div>
-                  </Button>
-                  
-                  {/* Note delete button */}
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 pr-2"
-                    onClick={() => deleteNote(note.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              ))}
+            <div className="text-center text-muted-foreground">
+              No tags found.
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
+
+      {/* New Tag Dialog */}
+      <Dialog open={isNewTagDialogOpen} onOpenChange={setIsNewTagDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Tag</DialogTitle>
+            <DialogDescription>
+              Add a new tag to categorize your notes.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...newTagForm}>
+            <form
+              onSubmit={newTagForm.handleSubmit(handleCreateTag)}
+              className="space-y-4"
+            >
+              <FormField
+                control={newTagForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tag Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="My Tag" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={newTagForm.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Color</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a color" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {tagColors.map((color) => (
+                          <SelectItem key={color} value={color}>
+                            <div
+                              className="h-3 w-3 rounded-full mr-2 inline-block"
+                              style={{ backgroundColor: `var(--${color})` }}
+                            />
+                            {color}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="submit">Create</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Tag Dialog */}
+      <Dialog
+        open={isEditTagDialogOpen}
+        onOpenChange={setIsEditTagDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Tag</DialogTitle>
+            <DialogDescription>
+              Edit or delete the selected tag.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...editTagForm}>
+            <form
+              onSubmit={editTagForm.handleSubmit(handleUpdateTag)}
+              className="space-y-4"
+            >
+              <FormField
+                control={editTagForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tag Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="My Tag" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editTagForm.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Color</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a color" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {tagColors.map((color) => (
+                          <SelectItem key={color} value={color}>
+                            <div
+                              className="h-3 w-3 rounded-full mr-2 inline-block"
+                              style={{ backgroundColor: `var(--${color})` }}
+                            />
+                            {color}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleDeleteTag}
+                  className="mr-2"
+                >
+                  Delete
+                </Button>
+                <Button type="submit">Update</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
