@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNotes } from "@/context/NoteContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Import extracted components
 import DocumentStats from "./markdown/DocumentStats";
@@ -12,6 +13,7 @@ import MarkdownInput from "./markdown/MarkdownInput";
 import MarkdownPreview from "./markdown/MarkdownPreview";
 import KeyboardShortcuts from "./markdown/KeyboardShortcuts";
 import ExportMenu from "./ExportMenu";
+import { Save } from "lucide-react";
 
 const MarkdownEditor: React.FC = () => {
   const { currentNote, updateNote } = useNotes();
@@ -21,6 +23,9 @@ const MarkdownEditor: React.FC = () => {
   const [readingTime, setReadingTime] = useState(0);
   const [history, setHistory] = useState<{ timestamp: string; content: string }[]>([]);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSaved, setIsSaved] = useState(true);
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (currentNote) {
@@ -45,28 +50,66 @@ const MarkdownEditor: React.FC = () => {
   const handleTitleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (!currentNote) return;
     updateNote(currentNote.id, { title: e.target.value });
+    triggerSyncIndicator();
   };
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (!currentNote) return;
     updateNote(currentNote.id, { content: e.target.value });
+    triggerSyncIndicator();
+  };
+  
+  const triggerSyncIndicator = () => {
+    setIsSyncing(true);
+    setIsSaved(false);
+    
+    // Clear any existing timeout
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+    
+    // Set a new timeout to hide the sync indicator after 1 second
+    syncTimeoutRef.current = setTimeout(() => {
+      setIsSyncing(false);
+      setIsSaved(true);
+    }, 1000);
   };
   
   const handleRestoreHistory = (content: string) => {
     if (!currentNote) return;
     updateNote(currentNote.id, { content });
+    triggerSyncIndicator();
   };
+
+  useEffect(() => {
+    // Clean up timeout on unmount
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (!currentNote) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="flex items-center justify-center h-full text-muted-foreground"
+      >
         Select a note or create a new one to get started
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="flex flex-col h-full overflow-hidden"
+    >
       <div className="flex justify-between items-center mb-4">
         <Textarea
           value={currentNote.title}
@@ -75,7 +118,22 @@ const MarkdownEditor: React.FC = () => {
           placeholder="Untitled"
           rows={1}
         />
-        <ExportMenu />
+        <div className="flex items-center gap-2">
+          <AnimatePresence>
+            {!isSaved && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="flex items-center gap-1 text-xs text-muted-foreground"
+              >
+                <Save className="h-3 w-3" />
+                <span>{isSyncing ? "Syncing..." : "Unsaved"}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <ExportMenu />
+        </div>
       </div>
 
       <DocumentStats 
@@ -116,7 +174,7 @@ const MarkdownEditor: React.FC = () => {
       </Tabs>
 
       <KeyboardShortcuts />
-    </div>
+    </motion.div>
   );
 };
 

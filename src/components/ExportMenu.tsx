@@ -10,12 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const ExportMenu = () => {
-  const { notes, folders, tags, currentNote, createNote } = useNotes();
+  const { notes, folders, tags, currentNote, createNote, restoreFromBackup } = useNotes();
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [backupDialogOpen, setBackupDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const backupInputRef = useRef<HTMLInputElement>(null);
-  const markdownPreviewRef = useRef<string>("#markdown-preview");
 
   const handlePdfExport = async () => {
     try {
@@ -24,7 +23,7 @@ const ExportMenu = () => {
         return;
       }
       
-      await exportToPdf(currentNote, tags, markdownPreviewRef.current);
+      await exportToPdf(currentNote, tags, "#markdown-preview");
       toast.success("PDF exported successfully");
     } catch (error) {
       console.error("PDF export error:", error);
@@ -89,7 +88,6 @@ const ExportMenu = () => {
         toast.success(`Imported: ${noteData.title}`);
       }
       
-      // Reset the input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -111,16 +109,12 @@ const ExportMenu = () => {
         return;
       }
       
-      // Show a confirmation dialog here if needed
       toast.info("Importing backup, please wait...");
       
       const { notes: importedNotes, folders: importedFolders, tags: importedTags } = await importBackup(file);
       
-      // TODO: Implement the restore function in NoteContext
-      // restoreFromBackup(importedNotes, importedFolders, importedTags);
-      toast.success("Backup imported successfully. Note: Restoring from backup is not fully implemented yet.");
+      restoreFromBackup(importedNotes, importedFolders, importedTags);
       
-      // Reset the input
       if (backupInputRef.current) {
         backupInputRef.current.value = "";
       }
@@ -131,7 +125,6 @@ const ExportMenu = () => {
     }
   };
 
-  // Handle file drop
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     
@@ -148,11 +141,9 @@ const ExportMenu = () => {
           createNote(null, noteData);
           toast.success(`Imported: ${noteData.title}`);
         } else if (i === 0 && (file.type === "application/json" || file.name.endsWith(".json"))) {
-          // Only try to import the first JSON file as a backup
           try {
             const { notes: importedNotes, folders: importedFolders, tags: importedTags } = await importBackup(file);
-            // TODO: Implement the restore function in NoteContext
-            // restoreFromBackup(importedNotes, importedFolders, importedTags);
+            restoreFromBackup(importedNotes, importedFolders, importedTags);
             toast.success("Backup file detected. Note: Restoring from backup is not fully implemented yet.");
           } catch (error) {
             toast.error("Invalid backup file format");

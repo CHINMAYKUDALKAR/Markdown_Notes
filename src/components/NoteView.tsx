@@ -11,6 +11,7 @@ import { Check, Plus, Search, Tag as TagIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { motion, AnimatePresence } from "framer-motion";
 
 const NoteView: React.FC = () => {
   const { currentNote, tags, updateNote, notes, searchQuery, setSearchQuery } = useNotes();
@@ -110,34 +111,49 @@ const NoteView: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="flex flex-col h-full overflow-hidden"
+    >
       {/* Top actions bar */}
       <div className="py-2 px-4 border-b flex items-center justify-between">
         <div className="flex items-center gap-2 overflow-x-auto flex-1 mr-2">
-          {noteTags.map(tag => (
-            <Badge 
-              key={tag.id} 
-              style={{ backgroundColor: tag.color, color: '#333' }}
-              className="flex items-center gap-1"
-            >
-              {tag.name}
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-4 w-4 p-0 hover:bg-transparent hover:text-primary"
-                onClick={() => removeTag(tag.id)}
+          <AnimatePresence>
+            {noteTags.map(tag => (
+              <motion.div
+                key={tag.id}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.2 }}
               >
-                <span>×</span>
-              </Button>
-            </Badge>
-          ))}
+                <Badge 
+                  style={{ backgroundColor: tag.color, color: '#333' }}
+                  className="flex items-center gap-1"
+                >
+                  {tag.name}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-4 w-4 p-0 hover:bg-transparent hover:text-primary"
+                    onClick={() => removeTag(tag.id)}
+                  >
+                    <span>×</span>
+                  </Button>
+                </Badge>
+              </motion.div>
+            ))}
+          </AnimatePresence>
           
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-6 gap-1">
+                    <Button variant="outline" size="sm" className="h-6 gap-1 hover:scale-105 transition-transform duration-200">
                       <TagIcon className="h-3 w-3" />
                       <Plus className="h-3 w-3" />
                     </Button>
@@ -194,60 +210,77 @@ const NoteView: React.FC = () => {
             </Tooltip>
           </TooltipProvider>
 
-          {showSearchResults && (
-            <div className="absolute right-0 top-full mt-2 w-96 p-2 rounded-md border shadow-md bg-background z-10">
-              <Input
-                placeholder="Search in notes..."
-                value={localSearchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="mb-2"
-              />
-              {localSearchQuery.length > 0 && (
-                <div className="max-h-96 overflow-auto">
-                  {searchResults.length === 0 ? (
-                    <div className="text-sm text-muted-foreground p-2">No results found</div>
-                  ) : (
-                    <div className="flex flex-col gap-1">
-                      {searchResults.map(result => (
-                        <Button 
-                          key={result.id} 
-                          variant="ghost" 
-                          className="justify-start text-left h-auto py-2"
-                          onClick={() => {
-                            setShowSearchResults(false);
-                          }}
-                        >
-                          <div className="truncate w-full">
-                            <div className="font-medium">
-                              {highlightText(result.title, localSearchQuery)}
-                            </div>
-                            {result.matches.slice(0, 2).map((match, idx) => (
-                              <div key={idx} className="text-xs text-muted-foreground mt-1">
-                                {"..."}
-                                {highlightText(match.text, localSearchQuery)}
-                                {"..."}
-                              </div>
-                            ))}
-                          </div>
-                        </Button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="absolute top-2 right-2 h-5 w-5"
-                onClick={() => {
-                  setShowSearchResults(false);
-                  setLocalSearchQuery("");
-                }}
+          <AnimatePresence>
+            {showSearchResults && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="absolute right-0 top-full mt-2 w-96 p-2 rounded-md border shadow-md bg-background z-10"
               >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
+                <Input
+                  placeholder="Search in notes..."
+                  value={localSearchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  className="mb-2"
+                />
+                {localSearchQuery.length > 0 && (
+                  <div className="max-h-96 overflow-auto">
+                    {searchResults.length === 0 ? (
+                      <div className="text-sm text-muted-foreground p-2">No results found</div>
+                    ) : (
+                      <div className="flex flex-col gap-1">
+                        <AnimatePresence>
+                          {searchResults.map(result => (
+                            <motion.div
+                              key={result.id}
+                              initial={{ opacity: 0, y: 5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: 5 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <Button 
+                                variant="ghost" 
+                                className="justify-start text-left h-auto py-2 w-full hover:scale-[1.02] transition-transform duration-200"
+                                onClick={() => {
+                                  setShowSearchResults(false);
+                                }}
+                              >
+                                <div className="truncate w-full">
+                                  <div className="font-medium">
+                                    {highlightText(result.title, localSearchQuery)}
+                                  </div>
+                                  {result.matches.slice(0, 2).map((match, idx) => (
+                                    <div key={idx} className="text-xs text-muted-foreground mt-1">
+                                      {"..."}
+                                      {highlightText(match.text, localSearchQuery)}
+                                      {"..."}
+                                    </div>
+                                  ))}
+                                </div>
+                              </Button>
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute top-2 right-2 h-5 w-5"
+                  onClick={() => {
+                    setShowSearchResults(false);
+                    setLocalSearchQuery("");
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -255,7 +288,7 @@ const NoteView: React.FC = () => {
       <ScrollArea className="flex-1 p-4">
         <MarkdownEditor />
       </ScrollArea>
-    </div>
+    </motion.div>
   );
 };
 
