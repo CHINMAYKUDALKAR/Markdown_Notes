@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNotes } from "@/context/NoteContext";
 import MarkdownEditor from "./MarkdownEditor";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -13,10 +13,58 @@ import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const NoteView: React.FC = () => {
-  const { currentNote, tags, updateNote, notes } = useNotes();
+  const { currentNote, tags, updateNote, notes, searchQuery, setSearchQuery } = useNotes();
   const [tagPopoverOpen, setTagPopoverOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [localSearchQuery, setLocalSearchQuery] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [searchResults, setSearchResults] = useState<Array<{id: string, title: string, content: string, matches: Array<{text: string, position: number}>}>>([]);
+
+  useEffect(() => {
+    setLocalSearchQuery(searchQuery);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (localSearchQuery.length > 0) {
+      const results = notes.map(note => {
+        const titleMatches = note.title.toLowerCase().includes(localSearchQuery.toLowerCase())
+          ? [{ text: note.title, position: note.title.toLowerCase().indexOf(localSearchQuery.toLowerCase()) }]
+          : [];
+          
+        const contentMatches = [];
+        const lowerCaseContent = note.content.toLowerCase();
+        const lowerCaseQuery = localSearchQuery.toLowerCase();
+        let position = 0;
+        
+        while ((position = lowerCaseContent.indexOf(lowerCaseQuery, position)) !== -1) {
+          // Get a snippet of content around the match
+          const start = Math.max(0, position - 20);
+          const end = Math.min(note.content.length, position + localSearchQuery.length + 20);
+          const snippet = note.content.substring(start, end);
+          
+          contentMatches.push({
+            text: snippet,
+            position: position
+          });
+          
+          position += lowerCaseQuery.length;
+          
+          // Limit to 3 matches per note
+          if (contentMatches.length >= 3) break;
+        }
+        
+        return {
+          id: note.id,
+          title: note.title,
+          content: note.content,
+          matches: [...titleMatches, ...contentMatches]
+        };
+      }).filter(result => result.matches.length > 0);
+      
+      setSearchResults(results);
+    } else {
+      setSearchResults([]);
+    }
+  }, [localSearchQuery, notes]);
 
   if (!currentNote) {
     return null;
@@ -43,13 +91,23 @@ const NoteView: React.FC = () => {
     });
   };
 
-  // Search functionality
-  const searchResults = searchQuery.length > 0 
-    ? notes.filter(note => 
-        note.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        note.content.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : [];
+  const handleSearchChange = (value: string) => {
+    setLocalSearchQuery(value);
+    if (value.length > 0) {
+      setShowSearchResults(true);
+    }
+  };
+
+  const highlightText = (text: string, query: string) => {
+    if (!query || query.length === 0) return text;
+    
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return parts.map((part, index) => 
+      part.toLowerCase() === query.toLowerCase() 
+        ? <mark key={index} className="bg-yellow-200 dark:bg-yellow-800">{part}</mark>
+        : part
+    );
+  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -137,15 +195,15 @@ const NoteView: React.FC = () => {
           </TooltipProvider>
 
           {showSearchResults && (
-            <div className="absolute right-0 top-full mt-2 w-80 p-2 rounded-md border shadow-md bg-background z-10">
+            <div className="absolute right-0 top-full mt-2 w-96 p-2 rounded-md border shadow-md bg-background z-10">
               <Input
                 placeholder="Search in notes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={localSearchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="mb-2"
               />
-              {searchQuery.length > 0 && (
-                <div className="max-h-60 overflow-auto">
+              {localSearchQuery.length > 0 && (
+                <div className="max-h-96 overflow-auto">
                   {searchResults.length === 0 ? (
                     <div className="text-sm text-muted-foreground p-2">No results found</div>
                   ) : (
@@ -157,14 +215,19 @@ const NoteView: React.FC = () => {
                           className="justify-start text-left h-auto py-2"
                           onClick={() => {
                             setShowSearchResults(false);
-                            setSearchQuery("");
                           }}
                         >
-                          <div className="truncate">
-                            <div className="font-medium">{result.title}</div>
-                            <div className="text-xs text-muted-foreground truncate">
-                              {result.content.slice(0, 60)}...
+                          <div className="truncate w-full">
+                            <div className="font-medium">
+                              {highlightText(result.title, localSearchQuery)}
                             </div>
+                            {result.matches.slice(0, 2).map((match, idx) => (
+                              <div key={idx} className="text-xs text-muted-foreground mt-1">
+                                {"..."}
+                                {highlightText(match.text, localSearchQuery)}
+                                {"..."}
+                              </div>
+                            ))}
                           </div>
                         </Button>
                       ))}
@@ -178,7 +241,7 @@ const NoteView: React.FC = () => {
                 className="absolute top-2 right-2 h-5 w-5"
                 onClick={() => {
                   setShowSearchResults(false);
-                  setSearchQuery("");
+                  setLocalSearchQuery("");
                 }}
               >
                 <X className="h-3 w-3" />

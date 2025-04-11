@@ -39,7 +39,6 @@ const defaultNote: Note = {
   updatedAt: new Date().toISOString(),
 };
 
-// Sample colors for tags
 const tagColors = [
   "#F2FCE2", // soft green
   "#FEF7CD", // soft yellow
@@ -49,12 +48,9 @@ const tagColors = [
   "#D3E4FD", // soft blue
 ];
 
-// Create context
 const NoteContext = createContext<NoteContextType | undefined>(undefined);
 
-// Context provider
 export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Load initial data from localStorage or use defaults
   const [notes, setNotes] = useState<Note[]>(() => {
     const saved = localStorage.getItem("notes");
     return saved ? JSON.parse(saved) : [];
@@ -81,7 +77,6 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   
-  // Save to localStorage when state changes
   useEffect(() => {
     localStorage.setItem("notes", JSON.stringify(notes));
   }, [notes]);
@@ -94,7 +89,6 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem("tags", JSON.stringify(tags));
   }, [tags]);
 
-  // Note operations
   const createNote = (folderId: string | null = null) => {
     const newNote: Note = {
       ...defaultNote,
@@ -119,7 +113,6 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setNotes(updatedNotes);
     
-    // Update current note if it's the one being edited
     if (currentNote && currentNote.id === id) {
       setCurrentNote({ ...currentNote, ...data, updatedAt: new Date().toISOString() });
     }
@@ -128,7 +121,6 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteNote = (id: string) => {
     setNotes(notes.filter(note => note.id !== id));
     
-    // Clear current note if it's the one being deleted
     if (currentNote && currentNote.id === id) {
       setCurrentNote(null);
     }
@@ -136,7 +128,6 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success("Note deleted");
   };
   
-  // Folder operations
   const createFolder = (name: string, parentId: string | null = null) => {
     const newFolder: Folder = {
       id: uuidv4(),
@@ -157,7 +148,6 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   
   const deleteFolder = (id: string) => {
-    // Move all notes from this folder to null (root)
     const updatedNotes = notes.map(note => 
       note.folderId === id ? { ...note, folderId: null } : note
     );
@@ -165,7 +155,6 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setNotes(updatedNotes);
     setFolders(folders.filter(folder => folder.id !== id));
     
-    // If the deleted folder was selected, clear selection
     if (selectedFolder === id) {
       setSelectedFolder(null);
     }
@@ -173,9 +162,7 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success("Folder deleted");
   };
   
-  // Tag operations
   const createTag = (data: Partial<Tag>) => {
-    // Pick a random color if none provided
     const tagColor = data.color || tagColors[Math.floor(Math.random() * tagColors.length)];
     
     const newTag: Tag = {
@@ -197,7 +184,6 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   
   const deleteTag = (id: string) => {
-    // Remove this tag from all notes
     const updatedNotes = notes.map(note => ({
       ...note,
       tags: note.tags.filter(tagId => tagId !== id)
@@ -206,7 +192,6 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setNotes(updatedNotes);
     setTags(tags.filter(tag => tag.id !== id));
     
-    // If the deleted tag was selected, clear selection
     if (selectedTag === id) {
       setSelectedTag(null);
     }
@@ -240,7 +225,6 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return <NoteContext.Provider value={value}>{children}</NoteContext.Provider>;
 };
 
-// Custom hook to use the note context
 export const useNotes = () => {
   const context = useContext(NoteContext);
   if (context === undefined) {

@@ -18,6 +18,7 @@ import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 import { Search, PlusCircle, Edit, Trash2, Hash, Plus, X, ChevronRight, MoreHorizontal, BookOpen, CheckCircle, Clock, Pin, PinOff } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 const tagColors = [
   'note.purple',
@@ -58,6 +59,8 @@ const Sidebar: React.FC = () => {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
 
   const filteredNotes = notes.filter((note) =>
@@ -178,6 +181,21 @@ const Sidebar: React.FC = () => {
     createNote();
   };
 
+  const handleDeleteNote = (noteId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setNoteToDelete(noteId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteNote = () => {
+    if (noteToDelete) {
+      deleteNote(noteToDelete);
+      setNoteToDelete(null);
+      setIsDeleteDialogOpen(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-sidebar">
       <div className="p-4 border-b border-sidebar-border flex justify-between items-center">
@@ -210,17 +228,18 @@ const Sidebar: React.FC = () => {
             {filteredNotes.map((note) => (
               <div 
                 key={note.id} 
-                className="relative flex items-center"
+                className="relative flex items-center group"
               >
                 <Button
                   variant="ghost"
                   className={cn(
-                    "w-full justify-start rounded-md truncate pr-8",
+                    "w-full justify-start rounded-md truncate pr-16",
                     currentNote?.id === note.id
                       ? "bg-secondary hover:bg-secondary text-foreground"
                       : "hover:bg-accent hover:text-accent-foreground"
                   )}
                   onClick={() => setCurrentNote(note)}
+                  onDoubleClick={(e) => handleStartEditing(note.id, e)}
                 >
                   {editingNoteId === note.id ? (
                     <input
@@ -236,14 +255,25 @@ const Sidebar: React.FC = () => {
                   )}
                 </Button>
                 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 h-6 w-6 opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100"
-                  onClick={(e) => handleStartEditing(note.id, e)}
-                >
-                  <Edit className="h-3.5 w-3.5" />
-                </Button>
+                <div className="absolute right-0 flex space-x-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100"
+                    onClick={(e) => handleStartEditing(note.id, e)}
+                  >
+                    <Edit className="h-3.5 w-3.5" />
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100"
+                    onClick={(e) => handleDeleteNote(note.id, e)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -439,6 +469,23 @@ const Sidebar: React.FC = () => {
           </Form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Note</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this note? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setNoteToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteNote} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
