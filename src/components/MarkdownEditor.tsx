@@ -11,6 +11,7 @@ import DocumentStats from "./markdown/DocumentStats";
 import MarkdownInput from "./markdown/MarkdownInput";
 import MarkdownPreview from "./markdown/MarkdownPreview";
 import KeyboardShortcuts from "./markdown/KeyboardShortcuts";
+import ExportMenu from "./ExportMenu";
 
 const MarkdownEditor: React.FC = () => {
   const { currentNote, updateNote } = useNotes();
@@ -66,13 +67,16 @@ const MarkdownEditor: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <Textarea
-        value={currentNote.title}
-        onChange={handleTitleChange}
-        className="text-2xl font-bold border-none resize-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-0 mb-4"
-        placeholder="Untitled"
-        rows={1}
-      />
+      <div className="flex justify-between items-center mb-4">
+        <Textarea
+          value={currentNote.title}
+          onChange={handleTitleChange}
+          className="text-2xl font-bold border-none resize-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-0 flex-grow"
+          placeholder="Untitled"
+          rows={1}
+        />
+        <ExportMenu />
+      </div>
 
       <DocumentStats 
         wordCount={wordCount}
@@ -102,10 +106,12 @@ const MarkdownEditor: React.FC = () => {
         </TabsContent>
         
         <TabsContent value="preview" className="flex-1 overflow-auto p-0 pt-4 m-0">
-          <MarkdownPreview 
-            content={currentNote.content}
-            theme={theme}
-          />
+          <div id="markdown-preview">
+            <MarkdownPreview 
+              content={currentNote.content}
+              theme={theme}
+            />
+          </div>
         </TabsContent>
       </Tabs>
 

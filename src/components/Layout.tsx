@@ -1,51 +1,72 @@
 
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import Sidebar from "./Sidebar";
 import NoteView from "./NoteView";
-import { NoteProvider } from "@/context/NoteContext";
-import { Button } from "@/components/ui/button";
-import { ChevronRight, ChevronLeft } from "lucide-react";
-import { useTheme } from "@/context/ThemeContext";
-import { cn } from "@/lib/utils";
+import { useNotes } from "@/context/NoteContext";
+import { importMarkdownFile, importBackup } from "@/utils/exportUtils";
+import { toast } from "sonner";
 
 const Layout: React.FC = () => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const { theme } = useTheme();
+  const { createNote } = useNotes();
   
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-  };
-
+  useEffect(() => {
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+    };
+    
+    const handleDrop = async (e: DragEvent) => {
+      e.preventDefault();
+      
+      if (!e.dataTransfer) return;
+      
+      try {
+        const files = e.dataTransfer.files;
+        
+        if (files.length === 0) return;
+        
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          
+          if (file.type === "text/markdown" || file.name.endsWith(".md")) {
+            const noteData = await importMarkdownFile(file);
+            createNote(null, noteData);
+            toast.success(`Imported: ${noteData.title}`);
+          } else if (i === 0 && (file.type === "application/json" || file.name.endsWith(".json"))) {
+            // Only try to import the first JSON file as a backup
+            try {
+              toast.info("Backup file detected. Note: Import from backup coming soon.");
+              // This will be implemented in the future
+            } catch (error) {
+              toast.error("Invalid backup file format");
+            }
+          } else {
+            toast.error(`Unsupported file: ${file.name}`);
+          }
+        }
+      } catch (error) {
+        console.error("File drop error:", error);
+        toast.error("Failed to process dropped files");
+      }
+    };
+    
+    document.addEventListener("dragover", handleDragOver);
+    document.addEventListener("drop", handleDrop);
+    
+    return () => {
+      document.removeEventListener("dragover", handleDragOver);
+      document.removeEventListener("drop", handleDrop);
+    };
+  }, [createNote]);
+  
   return (
-    <NoteProvider>
-      <div className={cn(
-        "flex h-screen transition-all duration-300",
-        theme === 'dark' ? 'bg-background text-foreground' : ''
-      )}>
-        <div className={cn(
-          "border-r border-border transition-all duration-300 flex-shrink-0",
-          sidebarCollapsed ? "w-0 overflow-hidden" : "w-72 md:w-80"
-        )}>
-          <Sidebar />
-        </div>
-        
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className={cn(
-            "absolute bottom-6 z-10 rounded-full shadow-md bg-background border border-border",
-            sidebarCollapsed ? "left-4" : "left-[17rem] md:left-[19rem]"
-          )}
-          onClick={toggleSidebar}
-        >
-          {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </Button>
-        
-        <div className="flex-1 overflow-hidden">
-          <NoteView />
-        </div>
+    <div className="flex h-screen bg-background text-foreground">
+      <div className="w-[300px] border-r h-full overflow-hidden">
+        <Sidebar />
       </div>
-    </NoteProvider>
+      <div className="flex-1 p-6 overflow-auto">
+        <NoteView />
+      </div>
+    </div>
   );
 };
 

@@ -12,7 +12,7 @@ interface NoteContextType {
   selectedFolder: string | null;
   selectedTag: string | null;
   
-  createNote: (folderId?: string | null) => void;
+  createNote: (folderId?: string | null, noteData?: Partial<Note>) => Note;
   updateNote: (id: string, data: Partial<Note>) => void;
   deleteNote: (id: string) => void;
   setCurrentNote: (note: Note | null) => void;
@@ -27,6 +27,8 @@ interface NoteContextType {
   createTag: (data: Partial<Tag>) => void;
   updateTag: (id: string, data: Partial<Tag>) => void;
   deleteTag: (id: string) => void;
+  
+  restoreFromBackup: (importedNotes: Note[], importedFolders: Folder[], importedTags: Tag[]) => void;
 }
 
 const defaultNote: Note = {
@@ -89,13 +91,14 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem("tags", JSON.stringify(tags));
   }, [tags]);
 
-  const createNote = (folderId: string | null = null) => {
+  const createNote = (folderId: string | null = null, noteData: Partial<Note> = {}) => {
     const newNote: Note = {
       ...defaultNote,
-      id: uuidv4(),
+      ...noteData,
+      id: noteData.id || uuidv4(),
       folderId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: noteData.createdAt || new Date().toISOString(),
+      updatedAt: noteData.updatedAt || new Date().toISOString(),
     };
     
     setNotes([newNote, ...notes]);
@@ -199,6 +202,18 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success("Tag deleted");
   };
   
+  const restoreFromBackup = (importedNotes: Note[], importedFolders: Folder[], importedTags: Tag[]) => {
+    setNotes(importedNotes);
+    setFolders(importedFolders);
+    setTags(importedTags);
+    
+    setCurrentNote(null);
+    setSelectedFolder(null);
+    setSelectedTag(null);
+    
+    toast.success(`Restored ${importedNotes.length} notes, ${importedFolders.length} folders, and ${importedTags.length} tags`);
+  };
+  
   const value = {
     notes,
     folders,
@@ -220,6 +235,7 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     createTag,
     updateTag,
     deleteTag,
+    restoreFromBackup,
   };
   
   return <NoteContext.Provider value={value}>{children}</NoteContext.Provider>;
