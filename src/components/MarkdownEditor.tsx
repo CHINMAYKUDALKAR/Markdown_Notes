@@ -13,7 +13,53 @@ import MarkdownInput from "./markdown/MarkdownInput";
 import MarkdownPreview from "./markdown/MarkdownPreview";
 import KeyboardShortcuts from "./markdown/KeyboardShortcuts";
 import ExportMenu from "./ExportMenu";
-import { Save } from "lucide-react";
+import { LoaderCircle, Save } from "lucide-react";
+
+const SyncingAnimation = () => (
+  <motion.div
+    className="flex items-center gap-1 text-xs text-muted-foreground"
+    initial={{ opacity: 0, scale: 0.8 }}
+    animate={{ opacity: 1, scale: 1 }}
+    exit={{ opacity: 0, scale: 0.8 }}
+  >
+    <motion.div
+      animate={{ rotate: 360 }}
+      transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+    >
+      <LoaderCircle className="h-3 w-3" />
+    </motion.div>
+    <span className="flex items-center">
+      Syncing
+      <motion.span
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 1, 1, 0] }}
+        transition={{ repeat: Infinity, duration: 1.5, times: [0, 0.3, 0.7, 1] }}
+      >.</motion.span>
+      <motion.span
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 1, 1, 0] }}
+        transition={{ repeat: Infinity, duration: 1.5, times: [0, 0.3, 0.7, 1], delay: 0.2 }}
+      >.</motion.span>
+      <motion.span
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 1, 1, 0] }}
+        transition={{ repeat: Infinity, duration: 1.5, times: [0, 0.3, 0.7, 1], delay: 0.4 }}
+      >.</motion.span>
+    </span>
+  </motion.div>
+);
+
+const SavedIndicator = () => (
+  <motion.div
+    className="flex items-center gap-1 text-xs text-green-500"
+    initial={{ opacity: 0, scale: 0.8 }}
+    animate={{ opacity: 1, scale: 1 }}
+    exit={{ opacity: 0, scale: 0.8 }}
+  >
+    <Save className="h-3 w-3" />
+    <span>Saved</span>
+  </motion.div>
+);
 
 const MarkdownEditor: React.FC = () => {
   const { currentNote, updateNote } = useNotes();
@@ -72,6 +118,11 @@ const MarkdownEditor: React.FC = () => {
     syncTimeoutRef.current = setTimeout(() => {
       setIsSyncing(false);
       setIsSaved(true);
+      
+      // Hide saved indicator after 2 seconds
+      setTimeout(() => {
+        setIsSaved(false);
+      }, 2000);
     }, 1000);
   };
   
@@ -118,19 +169,10 @@ const MarkdownEditor: React.FC = () => {
           placeholder="Untitled"
           rows={1}
         />
-        <div className="flex items-center gap-2">
-          <AnimatePresence>
-            {!isSaved && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                className="flex items-center gap-1 text-xs text-muted-foreground"
-              >
-                <Save className="h-3 w-3" />
-                <span>{isSyncing ? "Syncing..." : "Unsaved"}</span>
-              </motion.div>
-            )}
+        <div className="flex items-center gap-2 min-w-[100px] justify-end">
+          <AnimatePresence mode="wait">
+            {isSyncing && <SyncingAnimation key="syncing" />}
+            {!isSyncing && isSaved && <SavedIndicator key="saved" />}
           </AnimatePresence>
           <ExportMenu />
         </div>

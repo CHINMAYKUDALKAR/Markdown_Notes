@@ -19,6 +19,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Search, PlusCircle, Edit, Trash2, Hash, Plus, X, ChevronRight, MoreHorizontal, BookOpen, CheckCircle, Clock, Pin, PinOff } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { motion } from "framer-motion";
 
 const tagColors = [
   'note.purple',
@@ -224,59 +225,62 @@ const Sidebar: React.FC = () => {
         <Separator className="pb-4" />
 
         {filteredNotes.length > 0 ? (
-          <div className="flex flex-col space-y-2">
-            {filteredNotes.map((note) => (
-              <div 
-                key={note.id} 
-                className="relative flex items-center group"
-              >
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "w-full justify-start rounded-md truncate pr-16",
-                    currentNote?.id === note.id
-                      ? "bg-secondary hover:bg-secondary text-foreground"
-                      : "hover:bg-accent hover:text-accent-foreground"
-                  )}
-                  onClick={() => setCurrentNote(note)}
-                  onDoubleClick={(e) => handleStartEditing(note.id, e)}
+          <motion.div className="flex flex-col space-y-2">
+            {filteredNotes.map((note, index) => {
+              const isNewlyCreated = index === 0 && note.createdAt === note.updatedAt;
+              return (
+                <div 
+                  key={note.id} 
+                  className="relative flex items-center group"
                 >
-                  {editingNoteId === note.id ? (
-                    <input
-                      ref={editInputRef}
-                      className="w-full bg-transparent border-none focus:outline-none focus:ring-0"
-                      value={note.title}
-                      onChange={(e) => handleTitleChange(e, note.id)}
-                      onKeyDown={(e) => handleKeyDown(e, note.id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  ) : (
-                    <span className="truncate">{getNoteDisplayTitle(note)}</span>
-                  )}
-                </Button>
-                
-                <div className="absolute right-0 flex space-x-1">
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100"
-                    onClick={(e) => handleStartEditing(note.id, e)}
+                    className={cn(
+                      "w-full justify-start rounded-md truncate pr-16",
+                      currentNote?.id === note.id
+                        ? "bg-secondary hover:bg-secondary text-foreground"
+                        : "hover:bg-accent hover:text-accent-foreground"
+                    )}
+                    onClick={() => setCurrentNote(note)}
+                    onDoubleClick={(e) => handleStartEditing(note.id, e)}
                   >
-                    <Edit className="h-3.5 w-3.5" />
+                    {editingNoteId === note.id ? (
+                      <input
+                        ref={editInputRef}
+                        className="w-full bg-transparent border-none focus:outline-none focus:ring-0"
+                        value={note.title}
+                        onChange={(e) => handleTitleChange(e, note.id)}
+                        onKeyDown={(e) => handleKeyDown(e, note.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <span className="truncate">{getNoteDisplayTitle(note)}</span>
+                    )}
                   </Button>
                   
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100"
-                    onClick={(e) => handleDeleteNote(note.id, e)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="absolute right-0 flex space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100"
+                      onClick={(e) => handleStartEditing(note.id, e)}
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                    </Button>
+                    
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100"
+                      onClick={(e) => handleDeleteNote(note.id, e)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              );
+            })}
+          </motion.div>
         ) : (
           <div className="text-center text-muted-foreground">
             No notes found.
@@ -285,10 +289,26 @@ const Sidebar: React.FC = () => {
       </ScrollArea>
 
       <div className="p-4 border-t border-sidebar-border">
-        <Button variant="secondary" className="w-full" onClick={handleCreateNote}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          New Note
-        </Button>
+        <motion.div 
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+        >
+          <Button 
+            variant="secondary" 
+            className="w-full" 
+            onClick={handleCreateNote}
+          >
+            <motion.div
+              initial={{ rotate: 0 }}
+              whileHover={{ rotate: 90 }}
+              transition={{ duration: 0.2 }}
+              className="mr-2"
+            >
+              <PlusCircle className="h-4 w-4" />
+            </motion.div>
+            New Note
+          </Button>
+        </motion.div>
       </div>
 
       <div className="p-4 border-t border-sidebar-border">
