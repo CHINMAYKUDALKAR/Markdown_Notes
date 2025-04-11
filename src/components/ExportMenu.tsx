@@ -1,11 +1,10 @@
-
 import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNotes } from "@/context/NoteContext";
 import { exportToPdf, exportToMarkdown, exportAllToZip, exportBackup, importMarkdownFile, importBackup } from "@/utils/exportUtils";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { FilePdf, FileJson, FileDown, FileUp, Database, FileZip, FileText } from "lucide-react";
+import { FileDown, FileUp, Database, File, FileJson, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -179,7 +178,7 @@ const ExportMenu = () => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={handlePdfExport} disabled={!currentNote}>
-            <FilePdf className="mr-2 h-4 w-4" />
+            <File className="mr-2 h-4 w-4" />
             Export Current Note as PDF
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleMarkdownExport} disabled={!currentNote}>
@@ -188,7 +187,7 @@ const ExportMenu = () => {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleExportAllNotes}>
-            <FileZip className="mr-2 h-4 w-4" />
+            <File className="mr-2 h-4 w-4" />
             Export All Notes as ZIP
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleBackupExport}>
