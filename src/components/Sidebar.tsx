@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNotes } from "@/context/NoteContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
-import { Search, PlusCircle, Edit, Trash2, Hash, Plus, X, ChevronRight, MoreHorizontal, BookOpen, CheckCircle, Clock } from "lucide-react";
+import { Search, PlusCircle, Edit, Trash2, Hash, Plus, X, ChevronRight, MoreHorizontal, BookOpen, CheckCircle, Clock, Pin, PinOff } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 
 const tagColors = [
@@ -31,7 +30,6 @@ const tagColors = [
   'note.softBlue',
 ];
 
-// Define the tag schema first before using it
 const tagSchema = z.object({
   name: z.string().min(2, {
     message: "Tag name must be at least 2 characters.",
@@ -59,11 +57,68 @@ const Sidebar: React.FC = () => {
   const [isEditTagDialogOpen, setIsEditTagDialogOpen] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   const filteredNotes = notes.filter((note) =>
     note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     note.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleStartEditing = (noteId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditingNoteId(noteId);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, noteId: string) => {
+    if (e.key === 'Enter') {
+      setEditingNoteId(null);
+    } else if (e.key === 'Escape') {
+      setEditingNoteId(null);
+    }
+  };
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>, noteId: string) => {
+    const newTitle = e.target.value;
+    updateNote(noteId, { title: newTitle });
+  };
+
+  useEffect(() => {
+    if (editingNoteId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingNoteId]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (editInputRef.current && !editInputRef.current.contains(e.target as Node)) {
+        setEditingNoteId(null);
+      }
+    };
+
+    if (editingNoteId) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [editingNoteId]);
+
+  const getNoteDisplayTitle = (note: { title: string; content: string }) => {
+    if (note.title && note.title !== "Untitled Note") {
+      return note.title;
+    }
+    
+    const firstLine = note.content
+      .split('\n')[0]
+      .replace(/^#+\s+/, '')
+      .trim();
+      
+    return firstLine || "Untitled Note";
+  };
 
   const newTagForm = useForm<z.infer<typeof tagSchema>>({
     resolver: zodResolver(tagSchema),
@@ -119,7 +174,6 @@ const Sidebar: React.FC = () => {
     setIsEditTagDialogOpen(true);
   };
 
-  // Create a wrapper function for createNote that handles the MouseEvent
   const handleCreateNote = () => {
     createNote();
   };
@@ -154,19 +208,43 @@ const Sidebar: React.FC = () => {
         {filteredNotes.length > 0 ? (
           <div className="flex flex-col space-y-2">
             {filteredNotes.map((note) => (
-              <Button
-                key={note.id}
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start rounded-md truncate",
-                  currentNote?.id === note.id
-                    ? "bg-secondary hover:bg-secondary text-foreground"
-                    : "hover:bg-accent hover:text-accent-foreground"
-                )}
-                onClick={() => setCurrentNote(note)}
+              <div 
+                key={note.id} 
+                className="relative flex items-center"
               >
-                {note.title || "Untitled"}
-              </Button>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-start rounded-md truncate pr-8",
+                    currentNote?.id === note.id
+                      ? "bg-secondary hover:bg-secondary text-foreground"
+                      : "hover:bg-accent hover:text-accent-foreground"
+                  )}
+                  onClick={() => setCurrentNote(note)}
+                >
+                  {editingNoteId === note.id ? (
+                    <input
+                      ref={editInputRef}
+                      className="w-full bg-transparent border-none focus:outline-none focus:ring-0"
+                      value={note.title}
+                      onChange={(e) => handleTitleChange(e, note.id)}
+                      onKeyDown={(e) => handleKeyDown(e, note.id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <span className="truncate">{getNoteDisplayTitle(note)}</span>
+                  )}
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 h-6 w-6 opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100"
+                  onClick={(e) => handleStartEditing(note.id, e)}
+                >
+                  <Edit className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             ))}
           </div>
         ) : (
@@ -221,7 +299,6 @@ const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* New Tag Dialog */}
       <Dialog open={isNewTagDialogOpen} onOpenChange={setIsNewTagDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -287,7 +364,6 @@ const Sidebar: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Tag Dialog */}
       <Dialog
         open={isEditTagDialogOpen}
         onOpenChange={setIsEditTagDialogOpen}

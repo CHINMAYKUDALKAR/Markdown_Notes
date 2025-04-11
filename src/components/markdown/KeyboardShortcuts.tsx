@@ -9,6 +9,7 @@ const KeyboardShortcuts: React.FC = () => {
       <span><kbd className="px-1 rounded bg-muted">Ctrl/⌘+I</kbd> Italic</span>
       <span><kbd className="px-1 rounded bg-muted">Ctrl/⌘+K</kbd> Link</span>
       <span><kbd className="px-1 rounded bg-muted">Ctrl/⌘+1-3</kbd> Headings</span>
+      <span><kbd className="px-1 rounded bg-muted">Double-click</kbd> Rename Note</span>
     </div>
   );
 };
